@@ -1,0 +1,86 @@
+program lunar_solar_concentrator
+    implicit none
+
+    ! --- Parameters ---
+    integer, parameter :: N_RAYS = 10000000     ! Number of test particles
+    real, parameter    :: SOLAR_FLUX = 1361.0   ! W/m^2 (Solar constant on Moon)
+    real, parameter    :: LENS_DIAM = 0.5       ! 0.5 meters
+    real, parameter    :: FOCAL_LEN = 2.0       ! 2 meters
+    real, parameter    :: SUN_RADIUS_RAD = 0.00465 ! 0.267 degrees (Solar disk)
+    real, parameter    :: PI = 3.14159265
+    
+    ! --- Grid for SiO2 target ---
+    integer, parameter :: GRID_SZ = 100
+    real, parameter    :: TARGET_WD = 0.1       ! 10cm x 10cm target area
+    real               :: grid(GRID_SZ, GRID_SZ)
+    
+    ! --- Variables ---
+    integer :: i, gx, gy
+    real :: rx, ry, rz, dx, dy, dz, dist
+    real :: tx, ty, r_lens, theta_lens, div_angle, div_phi
+    real :: total_energy, peak_flux
+
+    ! Initialize
+    grid = 0.0
+    call random_seed()
+
+    print *, "Starting simulation: Fused Silica Lens at 2.0m on Moon..."
+
+    do i = 1, N_RAYS
+        ! 1. EMISSION: Random point on the lens surface
+        r_lens = (LENS_DIAM / 2.0) * sqrt(rand_val())
+        theta_lens = 2.0 * PI * rand_val()
+        rx = r_lens * cos(theta_lens)
+        ry = r_lens * sin(theta_lens)
+        rz = 0.0
+
+        ! 2. DIVERGENCE: Account for the Sun's 0.5-degree width
+        div_angle = SUN_RADIUS_RAD * sqrt(rand_val())
+        div_phi = 2.0 * PI * rand_val()
+        
+        ! Initial Ray Vector (mostly Z-down, but slightly angled by sun width)
+        dx = sin(div_angle) * cos(div_phi)
+        dy = sin(div_angle) * sin(div_phi)
+        dz = cos(div_angle)
+
+        ! 3. LENS BENDING: Ideal Fresnel refraction toward focal point (0, 0, FOCAL_LEN)
+        ! We modify the direction vector to point toward the focus
+        dx = dx + (0.0 - rx) / FOCAL_LEN
+        dy = dy + (0.0 - ry) / FOCAL_LEN
+        
+        ! Re-normalize direction vector
+        dist = sqrt(dx**2 + dy**2 + dz**2)
+        dx = dx / dist; dy = dy / dist; dz = dz / dist
+
+        ! 4. TARGET INTERSECTION: Hit the Moon at Z = 2.0
+        ! tx = rx + dx * (focal_len / dz)
+        tx = rx + dx * (FOCAL_LEN / dz)
+        ty = ry + dy * (FOCAL_LEN / dz)
+
+        ! 5. DATA COLLECTION: Binning into the SiO2 grid
+        gx = nint(((tx + (TARGET_WD/2.0)) / TARGET_WD) * GRID_SZ)
+        gy = nint(((ty + (TARGET_WD/2.0)) / TARGET_WD) * GRID_SZ)
+
+        if (gx >= 1 .and. gx <= GRID_SZ .and. gy >= 1 .and. gy <= GRID_SZ) then
+            grid(gx, gy) = grid(gx, gy) + 1.0
+        end if
+    end do
+
+    ! --- Result Analysis ---
+    ! Calculate energy per ray: (Total Solar Power on Lens) / N_RAYS
+    total_energy = SOLAR_FLUX * (PI * (LENS_DIAM/2.0)**2)
+    peak_flux = (maxval(grid) / N_RAYS) * total_energy / ((TARGET_WD/GRID_SZ)**2)
+
+    print *, "--- RESULTS ---"
+    print *, "Concentrated Spot Diameter: ~", (SUN_RADIUS_RAD * 2.0 * FOCAL_LEN * 100.0), " cm"
+    print *, "Peak Flux: ", peak_flux / 1000.0, " kW/m^2"
+    
+    if (peak_flux > 500000.0) then
+        print *, "Status: Sintering and melting of SiO2 will occur in <1 second."
+    end if
+
+contains
+    real function rand_val()
+        call random_number(rand_val)
+    end function rand_val
+end program lunar_solar_concentrator
