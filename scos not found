@@ -1,0 +1,93 @@
+program lunar_concentrator
+    implicit none
+
+    ! --- Parameters ---
+    integer :: n_rays
+    real :: solar_flux, lens_diam, focal_len, sun_rad, pi
+    integer :: grid_sz
+    real :: target_wd
+    real :: grid(100, 100) 
+    
+    integer :: count, gx, gy
+    real :: rx, ry, dx, dy, dz, dist, r_val
+    real :: r_lens, theta_lens, div_angle, div_phi, tx, ty
+    real :: total_power, peak_count, peak_flux
+
+    ! Explicit assignments (more stable for experimental compilers)
+    n_rays = 1000000      
+    solar_flux = 1361.0   
+    lens_diam = 0.5       
+    focal_len = 2.0       
+    sun_rad = 0.00465 
+    pi = 3.14159265
+    grid_sz = 100
+    target_wd = 0.1       
+
+    ! Initialize grid
+    do gx = 1, 100
+        do gy = 1, 100
+            grid(gx, gy) = 0.0
+        end do
+    end do
+
+    print *, "Tracing rays..."
+
+    count = 1
+    do while (count <= n_rays)
+        ! 1. Lens Position
+        call random_number(r_val)
+        r_lens = (lens_diam / 2.0) * sqrt(r_val)
+        call random_number(r_val)
+        theta_lens = 2.0 * pi * r_val
+        
+        rx = r_lens * cos(theta_lens)
+        ry = r_lens * sin(theta_lens)
+
+        ! 2. Solar Divergence (Sun disk)
+        call random_number(r_val)
+        div_angle = sun_rad * sqrt(r_val)
+        call random_number(r_val)
+        div_phi = 2.0 * pi * r_val
+        
+        dx = sin(div_angle) * cos(div_phi)
+        dy = sin(div_angle) * sin(div_phi)
+        dz = cos(div_angle)
+
+        ! 3. Ideal Refraction toward (0,0,focal_len)
+        dx = dx + (0.0 - rx) / focal_len
+        dy = dy + (0.0 - ry) / focal_len
+        dist = sqrt(dx*dx + dy*dy + dz*dz)
+        dx = dx / dist
+        dy = dy / dist
+        dz = dz / dist
+
+        ! 4. Intersection with Moon at Z = 2.0
+        tx = rx + dx * (focal_len / dz)
+        ty = ry + dy * (focal_len / dz)
+
+        ! 5. Map to Grid
+        gx = int(((tx + (target_wd/2.0)) / target_wd) * grid_sz) + 1
+        gy = int(((ty + (target_wd/2.0)) / target_wd) * grid_sz) + 1
+
+        if (gx >= 1 .and. gx <= 100 .and. gy >= 1 .and. gy <= 100) then
+            grid(gx, gy) = grid(gx, gy) + 1.0
+        end if
+
+        count = count + 1
+    end do
+
+    ! Calculate Peak Flux
+    total_power = solar_flux * (pi * (lens_diam/2.0)**2)
+    peak_count = 0.0
+    do gx = 1, 100
+        do gy = 1, 100
+            if (grid(gx, gy) > peak_count) peak_count = grid(gx, gy)
+        end do
+    end do
+    
+    peak_flux = (peak_count / n_rays) * total_power / ((target_wd/grid_sz)**2)
+
+    print *, "Peak Flux on Moon (W/m^2): ", peak_flux
+    print *, "Melting point of SiO2 (approx): 1713000 W/m^2"
+
+end program lunar_concentrator
