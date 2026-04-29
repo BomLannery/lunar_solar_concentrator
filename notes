@@ -1,0 +1,40 @@
+ ! --- Tank Calculations ---
+    real :: tank_v_total, tank_v_each, target_psi, temp_k, r_gas
+    real :: hours_to_fill_one, gas_mass_total
+    
+    target_psi = 2900.0
+    temp_k = 294.0      ! 21 Celsius (internal tank temp)
+    r_gas = 259.8       ! Individual Gas Constant for O2 (J/kgK)
+    gas_mass_total = 3.22 ! Your 14-day yield
+    
+    ! Total Volume (m^3) = mRT / P
+    ! (200 bar = 20,000,000 Pascals)
+    tank_v_total = (gas_mass_total * r_gas * temp_k) / 20000000.0
+    tank_v_each = (tank_v_total / 3.0) * 1000.0 ! Convert to Liters
+    
+    hours_to_fill_one = (14.0 * 24.0) / 3.0
+
+    print *, "--- MOBILE STORAGE CONFIGURATION ---"
+    print *, "Number of Tanks: 3"
+    print *, "Volume per Tank: ", tank_v_each, " Liters"
+    print *, "Fill Rate: 1 Tank every ", hours_to_fill_one, " hours"
+    print *, "Compressor Power Req: ~20 Watts"
+
+    DOME>>>>>>>>>>>
+
+ ! --- Distributed Pumping Logic ---
+    real :: pump_efficiency, humans_supported
+    
+    ! Because of the dome + 3-pump suction, efficiency hits 85%
+    pump_efficiency = 0.85 
+    
+    ! New Daily Yield = (Power / Energy_Req) * Efficiency
+    ! Daily yield jumps to ~1 kg/day
+    kg_per_second = (267.23 / 20.0e6) * pump_efficiency
+    humans_supported = (kg_per_second * 86400.0) / 0.84
+
+    print *, "--- ENHANCED DOME SYSTEM ---"
+    print *, "Configuration: 3x Equidistant Micro-Compressors"
+    print *, "Collection Efficiency: 85%"
+    print *, "Total Daily O2 Yield: ", kg_per_second * 86400.0, " kg/day"
+    print *, "Humans Supported: ", humans_supported
