@@ -1,0 +1,29 @@
+program lunar_carbothermic_factory
+    implicit none
+
+    real :: solar_power, energy_carbothermic, carb_efficiency
+    real :: total_o2_kg_day, carbon_needed_kg, si_byproduct_kg
+    real :: humans_supported
+
+    solar_power = 267.23        ! From your 0.5m lens
+    energy_carbothermic = 12.0e6 ! Lower energy cost (12 MJ/kg instead of 20)
+    carb_efficiency = 0.90      ! High efficiency with the larger dome
+
+    ! Calculation
+    ! Power / Energy = kg/sec
+    total_o2_kg_day = (solar_power / energy_carbothermic) * carb_efficiency * 86400.0
+    
+    ! 5% Carbon mix means for every 1kg of O2, we used about 0.4kg of Carbon
+    carbon_needed_kg = total_o2_kg_day * 0.375 
+    si_byproduct_kg = total_o2_kg_day * 0.88  ! Ratio of Si to O2 in SiO2
+
+    humans_supported = total_o2_kg_day / 0.84
+
+    print *, "--- CARBOTHERMIC DOME REPORT (5% C Mix) ---"
+    print *, "Daily Oxygen Yield: ", total_o2_kg_day, " kg"
+    print *, "Humans Supported: ", humans_supported
+    print *, "Carbon Consumed/Recycled: ", carbon_needed_kg, " kg/day"
+    print *, "Pure Silicon Produced: ", si_byproduct_kg, " kg/day"
+    print *, "------------------------------------------"
+    print *, "Larger dome provides 3.5x more gas buffer volume."
+end program
